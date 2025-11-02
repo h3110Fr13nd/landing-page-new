@@ -48,8 +48,46 @@ export const POST = createPOST(
     let customer: any = null
 
     if (customerId) {
+      // Normalize common shapes: numeric IDs, objects with `id`, etc.
+      try {
+        if (typeof customerId === 'object' && customerId !== null && 'id' in customerId) {
+          // e.g. { id: '...' }
+          // @ts-ignore
+          customerId = String(customerId.id)
+        } else if (typeof customerId !== 'string') {
+          customerId = String(customerId)
+        }
+      } catch (e) {
+        // fallback to string conversion
+        customerId = String(customerId)
+      }
+
       customer = await prisma.customer.findFirst({ where: { id: customerId, userId: dbUser!.id } })
-      if (!customer) throw Object.assign(new Error('Invalid customer ID or customer does not belong to user'), { statusCode: 400 })
+
+      // If the provided ID doesn't exist for this user, try to create a customer
+      // when name/email were provided (tolerant behavior for some clients). Otherwise
+      // return a clear validation error including the id for easier debugging.
+      if (!customer) {
+        if (data.customerName || data.customerEmail) {
+          customer = await prisma.customer.create({ data: { userId: dbUser!.id, displayName: data.customerName || 'Customer', email: data.customerEmail || '' } })
+          customerId = customer.id
+        } else {
+          // Log contextual info to help diagnose ownership/mismatch issues
+          try {
+            console.error('Invoice create failed - invalid customer', {
+              dbUserId: dbUser?.id,
+              providedCustomerId: customerId,
+              hasCustomerName: Boolean(data.customerName),
+              hasCustomerEmail: Boolean(data.customerEmail),
+              requestUrl: request?.url
+            })
+          } catch (e) {
+            // ignore logging errors
+          }
+
+          throw Object.assign(new Error(`Invalid customer ID or customer does not belong to user (${customerId})`), { statusCode: 400 })
+        }
+      }
     } else if (data.customerName || data.customerEmail) {
       customer = await prisma.customer.findFirst({ where: { email: data.customerEmail || '', userId: dbUser!.id } })
       if (!customer) {
@@ -57,6 +95,14 @@ export const POST = createPOST(
       }
       customerId = customer.id
     } else {
+      try {
+        console.error('Invoice create failed - missing customer information', {
+          dbUserId: dbUser?.id,
+          payload: data,
+          requestUrl: request?.url
+        })
+      } catch (e) {}
+
       throw Object.assign(new Error('Customer ID or customer information (name/email) is required'), { statusCode: 400 })
     }
 
