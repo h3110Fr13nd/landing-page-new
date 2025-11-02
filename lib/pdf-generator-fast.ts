@@ -16,6 +16,10 @@ declare global {
 // Performance-optimized PDF generator with instant response
 class FastPDFGenerator {
   private static instance: FastPDFGenerator
+  // Log guards to prevent noisy repeated console output across repeated
+  // initialize attempts during builds or in multi-process environments.
+  private static hasLoggedBrowserLaunch = false
+  private static hasLoggedBrowserReady = false
   private maxPages = 5
   private isShuttingDown = false
   private readonly CACHE_TTL = 10 * 60 * 1000 // 10 minutes
@@ -79,11 +83,17 @@ class FastPDFGenerator {
     }
 
     if (this.browserPromise) {
-      console.log('⏳ FastPDF: Browser launch in progress, waiting...')
+      if (!FastPDFGenerator.hasLoggedBrowserLaunch) {
+        console.log('⏳ FastPDF: Browser launch in progress, waiting...')
+        FastPDFGenerator.hasLoggedBrowserLaunch = true
+      }
       return this.browserPromise.then(() => {})
     }
     
-    console.log('🚀 FastPDF: Launching browser...')
+    if (!FastPDFGenerator.hasLoggedBrowserLaunch) {
+      console.log('🚀 FastPDF: Launching browser...')
+      FastPDFGenerator.hasLoggedBrowserLaunch = true
+    }
     const launchStart = Date.now()
     
     this.browserPromise = puppeteer.launch({
@@ -118,7 +128,9 @@ class FastPDFGenerator {
       this.browser = await this.browserPromise
       const launchTime = Date.now() - launchStart
       
-      console.log(`✅ FastPDF: Browser launched in ${launchTime}ms`)
+      if (!FastPDFGenerator.hasLoggedBrowserReady) {
+        console.log(`✅ FastPDF: Browser launched in ${launchTime}ms`)
+      }
       
       // Pre-create page pool for instant access
       const poolStart = Date.now()
@@ -129,7 +141,10 @@ class FastPDFGenerator {
       }
       const poolTime = Date.now() - poolStart
 
-      console.log(`🚀 FastPDF: Browser initialized with ${this.maxPages} ready pages in ${poolTime}ms`)
+      if (!FastPDFGenerator.hasLoggedBrowserReady) {
+        console.log(`🚀 FastPDF: Browser initialized with ${this.maxPages} ready pages in ${poolTime}ms`)
+        FastPDFGenerator.hasLoggedBrowserReady = true
+      }
       
       // Handle browser disconnection
       this.browser.on('disconnected', () => {
@@ -264,7 +279,8 @@ class FastPDFGenerator {
     
     if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
       perfLog.total = Date.now() - startTime
-      console.log(`⚡ FastPDF: Cache hit for ${invoice.number} (${perfLog.total}ms)`)
+      // Cache hits are useful but can be chatty; show them at debug level.
+      console.debug(`⚡ FastPDF: Cache hit for ${invoice.number} (${perfLog.total}ms)`)
       return cached.buffer
     }
 
@@ -277,7 +293,7 @@ class FastPDFGenerator {
         console.log('🔄 FastPDF: Browser not ready, initializing...')
         await this.initializeBrowser()
       } else {
-        console.log('✅ FastPDF: Reusing existing browser')
+        console.debug('✅ FastPDF: Reusing existing browser')
       }
       perfLog.browserInit = Date.now() - browserStart
 
@@ -330,7 +346,7 @@ class FastPDFGenerator {
       this.cleanCache()
 
       perfLog.total = Date.now() - startTime
-      console.log(`🚀 FastPDF: Generated ${invoice.number} in ${perfLog.total}ms | Cache:${perfLog.cacheCheck}ms | Browser:${perfLog.browserInit}ms | Page:${perfLog.pageGet}ms | HTML:${perfLog.htmlGen}ms | Content:${perfLog.contentSet}ms | PDF:${perfLog.pdfGen}ms | Store:${perfLog.cacheStore}ms`)
+  console.log(`🚀 FastPDF: Generated ${invoice.number} in ${perfLog.total}ms | Cache:${perfLog.cacheCheck}ms | Browser:${perfLog.browserInit}ms | Page:${perfLog.pageGet}ms | HTML:${perfLog.htmlGen}ms | Content:${perfLog.contentSet}ms | PDF:${perfLog.pdfGen}ms | Store:${perfLog.cacheStore}ms`)
 
       return buffer
 

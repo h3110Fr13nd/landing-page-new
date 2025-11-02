@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { 
   exchangeMicrosoftCode,
   getMicrosoftUserInfo,
@@ -14,17 +14,24 @@ export const dynamic = 'force-dynamic'
 
 // Use shared prisma client from lib/prisma
 
-// Initialize admin Supabase client for user creation
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
+// Lazily initialize admin Supabase client for user creation.
+// Avoid constructing the client at module load so builds/CI without
+// SUPABASE_SERVICE_ROLE_KEY won't fail.
+const getSupabaseAdmin = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseServiceKey) return null
+
+  try {
+    return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+  } catch (e) {
+    console.error('Failed to create Supabase admin client:', e)
+    return null
   }
-)
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -164,7 +171,14 @@ export async function GET(request: NextRequest) {
                         Math.random().toString(36).substring(2, 6)
 
         // Create Supabase user
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        const supabaseAdmin = getSupabaseAdmin()
+
+        if (!supabaseAdmin) {
+          console.error('Supabase admin client not configured; cannot create auth user.')
+          return NextResponse.redirect(`${getBaseUrl()}/login?error=Auth backend not configured`)
+        }
+
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email,
           email_confirm: true,
           user_metadata: {

@@ -6,7 +6,11 @@ declare global {
 }
 
 // Auto-initialize PDF generator on server startup (only once)
-if (!global.__pdfAutoInitStarted) {
+// Auto-initialize only when explicitly enabled via env var. This avoids
+// noisy logs during builds and in environments where warmup isn't desired.
+const shouldAutoInit = process.env.PDF_AUTO_INIT === '1'
+
+if (shouldAutoInit && !global.__pdfAutoInitStarted) {
   global.__pdfAutoInitStarted = true
   console.log('🔥 PDF Auto-Initialize: Starting warmup on server startup...')
 
