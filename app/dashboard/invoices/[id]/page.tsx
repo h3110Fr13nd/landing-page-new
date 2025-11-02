@@ -3,16 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { 
   ArrowLeft, 
   Send, 
@@ -34,6 +25,15 @@ import { useToast } from '@/hooks/use-toast'
 // PDF generation now handled via server-side API endpoints
 import { EmailTrackingStatus } from '@/components/email-tracking-status'
 import Link from 'next/link'
+import InvoiceHeader from '@/components/invoice-detail/InvoiceHeader'
+import HeaderActions from '@/components/invoice-detail/HeaderActions'
+import InvoiceInfo from '@/components/invoice-detail/InvoiceInfo'
+import ItemsTable from '@/components/invoice-detail/ItemsTable'
+import PaymentHistory from '@/components/invoice-detail/PaymentHistory'
+import SidebarSummary from '@/components/invoice-detail/SidebarSummary'
+import PaymentModal from '@/components/invoice-detail/PaymentModal'
+import EmailModal from '@/components/invoice-detail/EmailModal'
+import DeleteAlertDialog from '@/components/invoice-detail/DeleteAlertDialog'
 
 const PAYMENT_METHODS = [
   'Cash',
@@ -585,604 +585,76 @@ export default function InvoiceDetailPage() {
       {/* Header */}
       <div className="flex flex-col space-y-4">
         {/* Back button and Invoice Info */}
-        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm" className="touch-target w-fit">
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              <span className="hidden xs:inline">Back</span>
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
-              Invoice {invoice.number}
-            </h1>
-            <div className="flex items-center space-x-3 mt-2">
-              {getStatusBadge(invoice.status)}
-              <span className="text-xs sm:text-sm text-gray-500">
-                {format(new Date(invoice.createdAt), 'MMM dd, yyyy')}
-              </span>
-            </div>
-          </div>
-        </div>
+        <InvoiceHeader invoice={invoice} getStatusBadge={getStatusBadge} />
         
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 xs:grid-cols-3 sm:flex sm:flex-wrap gap-2 sm:gap-2">
-          {isEditing ? (
-            <>
-              <Button
-                onClick={saveEditChanges}
-                disabled={loading}
-                className="touch-target col-span-1"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Save Changes</span>
-                <span className="sm:hidden">Save</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={cancelEdit}
-                className="touch-target col-span-1"
-              >
-                <X className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Cancel</span>
-                <span className="sm:hidden">Cancel</span>
-              </Button>
-            </>
-          ) : (
-            <>
-              {invoice.status === InvoiceStatus.DRAFT && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditing(true)}
-                    className="touch-target col-span-1"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Edit</span>
-                    <span className="sm:hidden">Edit</span>
-                  </Button>
-                  <Button
-                    onClick={() => updateInvoiceStatus(InvoiceStatus.SENT)}
-                    className="touch-target col-span-1"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Send Invoice</span>
-                    <span className="sm:hidden">Send</span>
-                  </Button>
-                </>
-              )}
-              
-              {[InvoiceStatus.SENT, InvoiceStatus.READ, InvoiceStatus.APPROVED, InvoiceStatus.OVERDUE, InvoiceStatus.PARTIALLY_PAID].includes(invoice.status) && (
-                <>
-                  <Button
-                    onClick={() => setShowPaymentModal(true)}
-                    className="touch-target col-span-1"
-                  >
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Record Payment</span>
-                    <span className="sm:hidden">Payment</span>
-                  </Button>
-                  {getAmountDue() > 0 && (
-                    <Button
-                      onClick={markAsPaid}
-                      disabled={markingPaid}
-                      variant="outline"
-                      className="touch-target col-span-1"
-                    >
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      <span className="hidden sm:inline">{markingPaid ? 'Marking...' : 'Mark as Paid'}</span>
-                      <span className="sm:hidden">{markingPaid ? '...' : 'Paid'}</span>
-                    </Button>
-                  )}
-                </>
-              )}
-              
-              <Button 
-                variant="outline"
-                onClick={() => setShowEmailModal(true)}
-                disabled={!invoice.customer?.email}
-                className="touch-target col-span-1"
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Email Invoice</span>
-                <span className="sm:hidden">Email</span>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={downloadInvoicePDF}
-                className="touch-target col-span-1"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Download PDF</span>
-                <span className="sm:hidden">PDF</span>
-              </Button>
-              
-
-              
-              {canDeleteInvoice(invoice) && (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteModal(true)}
-                  className="touch-target col-span-1"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Delete Invoice</span>
-                  <span className="sm:hidden">Delete</span>
-                </Button>
-              )}
-            </>
-          )}
-        </div>
+        {/* Action Buttons (moved to component) */}
+        <HeaderActions
+          invoice={invoice}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          saveEditChanges={saveEditChanges}
+          cancelEdit={cancelEdit}
+          updateInvoiceStatus={updateInvoiceStatus}
+          setShowPaymentModal={setShowPaymentModal}
+          setShowEmailModal={setShowEmailModal}
+          setShowDeleteModal={setShowDeleteModal}
+          downloadInvoicePDF={downloadInvoicePDF}
+          getAmountDue={getAmountDue}
+          markingPaid={markingPaid}
+          markAsPaid={markAsPaid}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Invoice Details */}
+        {/* Invoice Details Column */}
         <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoice Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Customer</Label>
-                  <p className="mt-1">{invoice.customer?.displayName}</p>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Invoice Date</Label>
-                  {isEditing ? (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal mt-1",
-                            !editForm.invoiceDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {editForm.invoiceDate ? format(editForm.invoiceDate, "PPP") : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={editForm.invoiceDate}
-                          onSelect={(date) => date && setEditForm(prev => ({ ...prev, invoiceDate: date }))}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  ) : (
-                    <p className="mt-1">{format(new Date(invoice.issueDate), 'MMM dd, yyyy')}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Due Date</Label>
-                  {isEditing ? (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal mt-1",
-                            !editForm.dueDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {editForm.dueDate ? format(editForm.dueDate, "PPP") : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={editForm.dueDate}
-                          onSelect={(date) => date && setEditForm(prev => ({ ...prev, dueDate: date }))}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  ) : (
-                    <p className="mt-1">{format(new Date(invoice.dueDate), 'MMM dd, yyyy')}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Currency</Label>
-                  <p className="mt-1">{invoice.currency}</p>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">PO Number</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editForm.poNumber}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, poNumber: e.target.value }))}
-                      placeholder="Optional"
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1">{invoice.poNumber || 'N/A'}</p>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Notes</Label>
-                {isEditing ? (
-                  <Textarea
-                    value={editForm.notes}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Optional notes for the customer"
-                    rows={3}
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm">{invoice.notes || 'No notes'}</p>
-                )}
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Payment Instructions</Label>
-                {isEditing ? (
-                  <Textarea
-                    value={editForm.paymentInstructions}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, paymentInstructions: e.target.value }))}
-                    placeholder="e.g., Bank account details, payment terms, etc."
-                    rows={3}
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm">{invoice.paymentInstructions || 'No payment instructions'}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Invoice Items */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoice Items</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="w-24">Quantity</TableHead>
-                    <TableHead className="w-32">Unit Price</TableHead>
-                    <TableHead className="w-32 text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoice.items?.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.description}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(item.total)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
-              <div className="mt-3 space-y-2 border-t pt-3">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>{formatCurrency(invoice.subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax ({invoice.taxInclusive ? 'Inclusive' : 'Exclusive'}):</span>
-                  <span>{formatCurrency(invoice.taxAmount)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                  <span>Total:</span>
-                  <span>{formatCurrency(invoice.total)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment History */}
-          {invoice.payments && invoice.payments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="w-24">Receipt</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoice.payments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell>{format(new Date(payment.paymentDate), 'MMM dd, yyyy')}</TableCell>
-                        <TableCell>{payment.paymentMethod}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(payment.amount)}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => downloadReceiptPDF({
-                              amount: payment.amount,
-                              paymentDate: payment.paymentDate.toString(),
-                              method: payment.paymentMethod
-                            })}
-                          >
-                            <Download className="w-3 h-3" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+          <InvoiceInfo invoice={invoice} isEditing={isEditing} editForm={editForm} setEditForm={setEditForm} />
+          <ItemsTable invoice={invoice} />
+          <PaymentHistory invoice={invoice} downloadReceiptPDF={downloadReceiptPDF} />
         </div>
 
-        {/* Invoice Summary Sidebar */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="sticky top-4 mb-4">
-            <CardHeader>
-              <CardTitle>Payment Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total Amount:</span>
-                  <span className="font-medium">{formatCurrency(invoice.total)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Amount Paid:</span>
-                  <span className="font-medium text-green-600">{formatCurrency(getTotalPaid())}</span>
-                </div>
-                <div className="border-t pt-2">
-                  <div className="flex justify-between">
-                    <span className="font-semibold">Amount Due:</span>
-                    <span className="font-bold text-lg text-red-600">{formatCurrency(getAmountDue())}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t">
-                <h4 className="font-medium mb-2">Customer Details:</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p>{invoice.customer?.displayName}</p>
-                  {invoice.customer?.email && <p>{invoice.customer.email}</p>}
-                  {invoice.customer?.phone && <p>{invoice.customer.phone}</p>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Email Tracking Status */}
-          <EmailTrackingStatus invoice={invoice} />
-        </div>
+        {/* Sidebar */}
+        <SidebarSummary invoice={invoice} getTotalPaid={getTotalPaid} getAmountDue={getAmountDue} />
       </div>
 
-      {/* Payment Modal */}
+      {/* Payment Modal (moved to component) */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Record Payment
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPaymentModal(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Payment Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !paymentDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {paymentDate ? format(paymentDate, "PPP") : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={paymentDate}
-                      onSelect={(date) => date && setPaymentDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div>
-                <Label htmlFor="paymentAmount">Amount Received</Label>
-                <Input
-                  id="paymentAmount"
-                  type="number"
-                  step="0.01"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_METHODS.map((method) => (
-                      <SelectItem key={method} value={method}>
-                        {method}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex space-x-4 pt-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowPaymentModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={recordPayment}
-                  className="flex-1"
-                >
-                  Record Payment
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <PaymentModal
+          invoice={invoice}
+          paymentDate={paymentDate}
+          setPaymentDate={setPaymentDate}
+          paymentAmount={paymentAmount}
+          setPaymentAmount={setPaymentAmount}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
+          PAYMENT_METHODS={PAYMENT_METHODS}
+          setShowPaymentModal={setShowPaymentModal}
+          recordPayment={recordPayment}
+        />
       )}
 
-      {/* Email Modal */}
+      {/* Email Modal (moved to component) */}
       {showEmailModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Email Invoice
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowEmailModal(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="recipientEmail">Recipient Email</Label>
-                <Input
-                  id="recipientEmail"
-                  type="email"
-                  value={emailForm.recipientEmail}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, recipientEmail: e.target.value }))}
-                  placeholder="customer@example.com"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="ccEmails">CC (Optional)</Label>
-                <Input
-                  id="ccEmails"
-                  type="text"
-                  value={emailForm.ccEmails}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, ccEmails: e.target.value }))}
-                  placeholder="email1@example.com, email2@example.com"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Separate multiple emails with commas
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="emailMessage">Message (Optional)</Label>
-                <Textarea
-                  id="emailMessage"
-                  value={emailForm.message}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, message: e.target.value }))}
-                  placeholder="Add a personal message to include with the invoice..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex space-x-4 pt-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowEmailModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={sendInvoiceEmail}
-                  className="flex-1"
-                  disabled={!emailForm.recipientEmail}
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  Send Email
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <EmailModal
+          invoice={invoice}
+          emailForm={emailForm}
+          setEmailForm={setEmailForm}
+          sendInvoiceEmail={sendInvoiceEmail}
+          setShowEmailModal={setShowEmailModal}
+        />
       )}
 
 
 
-      {/* Delete Invoice Modal */}
-      <AlertDialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Invoice {invoice.number}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove the invoice from your active invoices. The invoice data will be preserved for audit purposes but will no longer be visible in your dashboard.
-              {invoice.payments && invoice.payments.length > 0 && 
-                " Payment records will be preserved for audit purposes."
-              }
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="delete-reason" className="text-right">
-                Reason
-              </Label>
-              <Textarea
-                id="delete-reason"
-                value={deleteReason}
-                onChange={(e) => setDeleteReason(e.target.value)}
-                placeholder="Optional reason for deletion..."
-                className="col-span-3"
-                rows={3}
-              />
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowDeleteModal(false)
-              setDeleteReason('')
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteInvoice}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Invoice
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete Invoice Dialog (moved to component) */}
+      <DeleteAlertDialog
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        deleteReason={deleteReason}
+        setDeleteReason={setDeleteReason}
+        handleDeleteInvoice={handleDeleteInvoice}
+        invoice={invoice}
+      />
     </div>
   )
 }

@@ -36,7 +36,9 @@ export async function GET(
         payments: invoice.payments?.map(serializePayment)
       }
     },
-    { cache: CacheConfigs.USER_DATA }
+
+      { cache: CacheConfigs.USER_DATA }
+
   )(request as any)
 }
 
