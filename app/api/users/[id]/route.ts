@@ -62,6 +62,7 @@ export async function GET(
           onboardingCompleted: true,
           createdAt: true,
           updatedAt: true,
+          defaultTaxRate: true,
         },
       })
     )
@@ -79,7 +80,8 @@ export async function GET(
         currency: 'USD',
         onboardingCompleted: false,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        defaultTaxRate: null,
       }
       return NextResponse.json(fallbackUserData, { headers })
     }
@@ -129,7 +131,8 @@ export async function PUT(
       }
       return NextResponse.json(fallbackResponse)
     }
-    
+    console.log('Updating user profile for ID:', id)
+    console.log('Update data:', data)
     const userData = await withRetry(() =>
       prisma.user.update({
         where: { id: id },
@@ -154,6 +157,7 @@ export async function PUT(
           website: data.website,
           dateFormat: data.dateFormat,
           logoUrl: data.logoUrl,
+          defaultTaxRate: data.defaultTaxRate,
         },
       })
     )

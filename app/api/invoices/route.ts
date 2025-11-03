@@ -38,7 +38,7 @@ export const POST = createPOST(
 
     const subtotal = data.items.reduce((sum: number, item: any) => {
       const qty = Number(item.quantity) || 0
-      const price = Number(item.unitPrice) || 0
+      const price = Number(item.rate) || 0
       return sum + (qty * price)
     }, 0)
     const total = subtotal + (Number(data.taxAmount) || 0)
@@ -128,8 +128,8 @@ export const POST = createPOST(
             create: data.items.map((item: any) => ({
               description: item.description || 'Item',
               quantity: Number(item.quantity) || 1,
-              unitPrice: Number(item.unitPrice) || 0,
-              total: Number(item.total) || (Number(item.quantity || 1) * Number(item.unitPrice || 0))
+              unitPrice: Number(item.rate) || 0,
+              total: Number(item.amount) || (Number(item.quantity || 1) * Number(item.unitPrice || 0))
             }))
           }
         },

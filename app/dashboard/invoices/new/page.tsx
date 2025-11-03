@@ -80,7 +80,7 @@ function SimpleLoadingSkeleton() {
 
 export default function NewInvoicePage() {
   const router = useRouter()
-  const { user, getAuthHeaders } = useAuth()
+  const { user, userProfile, getAuthHeaders } = useAuth()
   const { toast } = useToast()
 
   // Loading states
@@ -190,11 +190,11 @@ export default function NewInvoicePage() {
    */
   const calculations = React.useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.rate), 0)
-    const tax = subtotal * 0.1 // 10% tax
+    const tax = subtotal * (userProfile?.defaultTaxRate || 0) / 100
     const total = subtotal + tax
     
     return { subtotal, tax, total }
-  }, [items])
+  }, [items, userProfile?.defaultTaxRate])
 
   /**
    * Add new item
@@ -526,7 +526,7 @@ export default function NewInvoicePage() {
                 <span>{formatCurrency(calculations.subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax (10%):</span>
+                <span>Tax ({userProfile?.defaultTaxRate ?? 10}%):</span>
                 <span>{formatCurrency(calculations.tax)}</span>
               </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
