@@ -56,14 +56,6 @@ export const LazyTutorialVideo = dynamic(
 // PDF viewer/generator - Heavy jsPDF library (use existing lazy-pdf)
 // Import from lazy-pdf.tsx directly instead
 
-// Color picker - Only needed in settings
-export const LazyColorPicker = dynamic(
-  () => import('@/components/color-picker').then(mod => mod.ColorPicker),
-  {
-    loading: () => <LoadingFallback />,
-    ssr: false,
-  }
-);
 
 // Voice invoice - Speech recognition features
 export const LazyVoiceInvoice = dynamic(
