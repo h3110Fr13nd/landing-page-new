@@ -60,11 +60,20 @@ export class FastUserCache {
     }
     
     // L3: Database lookup (last resort)
+    // IMPORTANT: Prisma / direct DB access must only run on the server.
+    // If we're in a browser environment (client-side), skip DB lookup and
+    // allow the caller to fall back to an API route. This prevents Prisma
+    // from being bundled into client bundles and avoids runtime errors.
+    if (typeof window !== 'undefined') {
+      // Running in browser: do not call Prisma here.
+      return null
+    }
+
     const dbUser = await this.fetchUserFromDatabase(supabaseUser)
-    
+
     // Cache the result in all levels
     this.setCachedUser(key, dbUser, now)
-    
+
     return dbUser
   }
   
