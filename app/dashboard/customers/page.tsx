@@ -13,6 +13,7 @@ import { useFetchOnce } from '@/hooks/use-fetch-once'
 import { Customer, COUNTRIES } from '@/lib/types'
 import { Plus, Edit, Trash2, User, Building } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { FadeIn, AnimatedCard, GradientText } from '@/components/dashboard/animated-components'
 
 interface CustomerFormData {
   displayName: string
@@ -219,22 +220,27 @@ export default function CustomersPage() {
 
   if (loading) {
     return (
-      <div className="container-mobile">
+      <FadeIn className="container-mobile">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/2 sm:w-1/4"></div>
-          <div className="h-24 sm:h-32 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/3"></div>
+          <div className="h-32 bg-gradient-to-r from-gray-200 to-gray-300 rounded"></div>
         </div>
-      </div>
+      </FadeIn>
     )
   }
 
   return (
-    <div className="container-mobile space-y-4 sm:space-y-6">
+    <FadeIn className="container-mobile space-y-4 sm:space-y-6">
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Customers</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">
+          <GradientText variant="primary">Customers</GradientText>
+        </h1>
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto touch-target">
+            <Button 
+              onClick={() => handleOpenDialog()} 
+              className="w-full sm:w-auto touch-target bg-gradient-to-r from-vibrant-blue to-phthalo-green hover:from-vibrant-blue/90 hover:to-phthalo-green/90 text-white shadow-md hover:shadow-lg transition-all"
+            >
               <Plus className="w-4 h-4 mr-2" />
               <span className="hidden xs:inline">Add Customer</span>
               <span className="xs:hidden">Add</span>
@@ -401,16 +407,19 @@ export default function CustomersPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Customers</CardTitle>
+      <AnimatedCard className="bg-white/80 backdrop-blur-md shadow-lg border border-gray-200/50 rounded-xl">
+        <CardHeader className="border-b border-gray-200/50">
+          <CardTitle className="text-navy-blue">All Customers</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {customers.length === 0 ? (
-            <div className="p-4 sm:p-6 text-center text-gray-500">
-              <User className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-sm sm:text-base">No customers yet</p>
-              <p className="text-xs sm:text-sm">Add your first customer to get started</p>
+            <div className="p-6 sm:p-8 text-center text-gray-500">
+              <div className="relative inline-block mb-4">
+                <User className="w-12 h-12 sm:w-16 sm:w-16 mx-auto text-vibrant-blue opacity-30" />
+                <div className="absolute inset-0 bg-gradient-to-r from-vibrant-blue/20 to-phthalo-green/20 blur-xl" />
+              </div>
+              <p className="text-sm sm:text-base font-medium text-navy-blue">No customers yet</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">Add your first customer to get started</p>
             </div>
           ) : (
             <div className="responsive-table">
@@ -418,18 +427,18 @@ export default function CustomersPage() {
                 {/* Mobile Card Layout */}
                 <div className="space-y-3 p-3">
                   {customers.map((customer) => (
-                    <div key={customer.id} className="bg-white border border-gray-200 rounded-lg p-3 space-y-2 shadow-sm">
+                    <div key={customer.id} className="bg-white/90 border border-gray-200/50 rounded-lg p-3 space-y-2 shadow-sm hover:shadow-md hover:bg-gradient-to-r hover:from-sky-blue/10 hover:to-transparent hover:border-vibrant-blue/30 transition-all duration-300">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 p-2 rounded-full bg-gradient-to-br from-vibrant-blue/10 to-phthalo-green/10">
                             {customer.businessName ? (
-                              <Building className="w-6 h-6 text-gray-400" />
+                              <Building className="w-5 h-5 text-phthalo-green" />
                             ) : (
-                              <User className="w-6 h-6 text-gray-400" />
+                              <User className="w-5 h-5 text-vibrant-blue" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="font-medium text-gray-900 truncate">{customer.displayName}</div>
+                            <div className="font-semibold text-navy-blue truncate">{customer.displayName}</div>
                             {customer.firstName && customer.lastName && (
                               <div className="text-sm text-gray-500 truncate">
                                 {customer.firstName} {customer.lastName}
@@ -442,15 +451,15 @@ export default function CustomersPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleOpenDialog(customer)}
-                            className="touch-target p-1 h-8 w-8"
+                            className="touch-target p-1 h-8 w-8 border-vibrant-blue/30 hover:bg-vibrant-blue/10 hover:border-vibrant-blue/50"
                           >
-                            <Edit className="w-3 h-3" />
+                            <Edit className="w-3 h-3 text-vibrant-blue" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDelete(customer)}
-                            className="text-red-600 hover:text-red-700 touch-target p-1 h-8 w-8"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 touch-target p-1 h-8 w-8"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -485,18 +494,18 @@ export default function CustomersPage() {
               </TableHeader>
               <TableBody>
                 {customers.map((customer) => (
-                  <TableRow key={customer.id}>
+                  <TableRow key={customer.id} className="hover:bg-gradient-to-r hover:from-sky-blue/10 hover:to-transparent transition-all duration-300">
                     <TableCell>
                       <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 p-2 rounded-full bg-gradient-to-br from-vibrant-blue/10 to-phthalo-green/10">
                           {customer.businessName ? (
-                            <Building className="w-8 h-8 text-gray-400" />
+                            <Building className="w-6 h-6 text-phthalo-green" />
                           ) : (
-                            <User className="w-8 h-8 text-gray-400" />
+                            <User className="w-6 h-6 text-vibrant-blue" />
                           )}
                         </div>
                         <div>
-                          <div className="font-medium">{customer.displayName}</div>
+                          <div className="font-semibold text-navy-blue">{customer.displayName}</div>
                           {customer.firstName && customer.lastName && (
                             <div className="text-sm text-gray-500">
                               {customer.firstName} {customer.lastName}
@@ -537,14 +546,15 @@ export default function CustomersPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleOpenDialog(customer)}
+                          className="border-vibrant-blue/30 hover:bg-vibrant-blue/10 hover:border-vibrant-blue/50 transition-all"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-4 h-4 text-vibrant-blue" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(customer)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -558,7 +568,7 @@ export default function CustomersPage() {
             </div>
           )}
         </CardContent>
-      </Card>
-    </div>
+      </AnimatedCard>
+    </FadeIn>
   )
 }
