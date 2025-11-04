@@ -10,7 +10,6 @@ const tabs = [
   { id: 'branding', label: 'Branding', icon: Wand2, href: '/dashboard/settings/branding' },
   { id: 'invoice-appearance', label: 'Invoice Appearance', icon: FileText, href: '/dashboard/settings/invoice-appearance' },
   { id: 'tax-currency', label: 'Tax & Currency', icon: DollarSign, href: '/dashboard/settings/tax-currency' },
-  { id: 'theme', label: 'Theme Preferences', icon: Palette, href: '/dashboard/settings/theme' },
   { id: 'notifications', label: 'Notifications', icon: Bell, href: '/dashboard/settings/notifications' },
   { id: 'help-support', label: 'Help & Support', icon: HelpCircle, href: '/dashboard/settings/help-support' },
   { id: 'chatbot-history', label: 'Chatbot History', icon: MessageCircle, href: '/dashboard/settings/chatbot-history' },
