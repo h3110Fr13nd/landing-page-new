@@ -75,7 +75,8 @@ export async function GET(
       phone: userProfile.phone || undefined,
       email: userProfile.email || undefined,
       logo: userProfile.logoUrl || userProfile.aiLogoUrl || undefined,
-      taxId: userProfile.businessRegNumber || undefined
+      taxId: userProfile.businessRegNumber || undefined,
+      invoiceColorScheme: userProfile.invoiceColorScheme || 'blue'
     }
     
     const pdfBuffer = await generateInvoicePDF(invoiceForPDF as any, businessInfo)

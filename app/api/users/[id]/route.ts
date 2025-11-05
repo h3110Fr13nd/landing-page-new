@@ -158,6 +158,10 @@ export async function PUT(
           dateFormat: data.dateFormat,
           logoUrl: data.logoUrl,
           defaultTaxRate: data.defaultTaxRate,
+          invoiceTemplate: data.invoiceTemplate,
+          invoiceColorScheme: data.invoiceColorScheme,
+          alwaysCcSelf: data.alwaysCcSelf,
+          defaultPaymentInstructions: data.defaultPaymentInstructions,
         },
       })
     )

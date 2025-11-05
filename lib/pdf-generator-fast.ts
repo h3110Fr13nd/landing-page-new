@@ -257,6 +257,7 @@ class FastPDFGenerator {
       email?: string
       logo?: string
       taxId?: string
+      invoiceColorScheme?: string // <-- add color scheme from user/business
     }
   ): Promise<Buffer> {
     const startTime = Date.now()
@@ -304,7 +305,7 @@ class FastPDFGenerator {
 
       // Generate HTML content
       const htmlStart = Date.now()
-      const htmlContent = this.generateOptimizedHTML(invoice, business)
+  const htmlContent = this.generateOptimizedHTML(invoice, business)
       perfLog.htmlGen = Date.now() - htmlStart
 
       // Set content with minimal wait time
@@ -372,8 +373,18 @@ class FastPDFGenerator {
       email?: string
       logo?: string
       taxId?: string
+      invoiceColorScheme?: string
     } = {}
   ): string {
+    // Map color scheme name to hex code
+    const colorMap: Record<string, string> = {
+      blue: '#0066cc',
+      green: '#10b981',
+      purple: '#7c3aed',
+      red: '#ef4444',
+      default: '#0066cc'
+    }
+    const selectedColor = colorMap[business?.invoiceColorScheme || 'blue'] || colorMap['default']
     const {
       number: invoiceNumber,
       issueDate,
@@ -432,11 +443,11 @@ class FastPDFGenerator {
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;line-height:1.4;color:#333;background:#fff;font-size:13px}
 .container{max-width:800px;margin:0 auto;padding:30px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;border-bottom:2px solid #0066cc;padding-bottom:15px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;border-bottom:2px solid ${selectedColor};padding-bottom:15px}
 .business-info{flex:1}
-.business-name{font-size:22px;font-weight:bold;color:#0066cc;margin-bottom:5px}
+.business-name{font-size:22px;font-weight:bold;color:${selectedColor};margin-bottom:5px}
 .business-details{font-size:12px;color:#666;line-height:1.3}
-.logo-placeholder{width:60px;height:60px;background:#0066cc;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:20px;font-weight:bold;margin-bottom:8px}
+.logo-placeholder{width:60px;height:60px;background:${selectedColor};color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:20px;font-weight:bold;margin-bottom:8px}
 .invoice-meta{text-align:right}
 .invoice-title{font-size:28px;font-weight:bold;margin-bottom:8px}
 .invoice-number{font-size:16px;color:#666;margin-bottom:5px}
@@ -458,9 +469,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;lin
 .items tr:nth-child(even){background:#fafbfc}
 .text-right{text-align:right}
 .text-center{text-align:center}
-.totals{margin-left:auto;width:250px;background:#f8f9fa;padding:15px;border-radius:6px;border-left:3px solid #0066cc}
+.totals{margin-left:auto;width:250px;background:#f8f9fa;padding:15px;border-radius:6px;border-left:3px solid ${selectedColor}}
 .totals-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px}
-.totals-row.total{border-top:1px solid #dee2e6;margin-top:8px;padding-top:12px;font-size:16px;font-weight:bold;color:#0066cc}
+.totals-row.total{border-top:1px solid #dee2e6;margin-top:8px;padding-top:12px;font-size:16px;font-weight:bold;color:${selectedColor}}
 .notes{margin-top:30px}
 .notes-content{background:#f8f9fa;padding:15px;border-radius:6px;border-left:3px solid #28a745;font-size:12px;color:#555;line-height:1.5}
 .footer{margin-top:40px;padding-top:15px;border-top:1px solid #dee2e6;text-align:center;color:#666;font-size:11px}
