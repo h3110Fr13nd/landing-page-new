@@ -56,7 +56,9 @@ export default function DashboardLayout({
   ]
 
   const isDev = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DIAGNOSTICS === 'true'
-  
+  console.log('Environment:', process.env.NODE_ENV)
+  console.log('Diagnostics Enabled Env Var:', process.env.NEXT_PUBLIC_ENABLE_DIAGNOSTICS)
+  console.log('Diagnostics Mode:', isDev)
   const navigation = isDev 
     ? [...baseNavigation, { name: 'Diagnostics', href: '/dashboard/diagnostics', icon: Activity }]
     : baseNavigation

@@ -41,8 +41,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Font is provided via next/font/google (Inter). next/font injects preload links automatically; */}
-        {/* removed manual /fonts/inter-var.woff2 preload to avoid 404 during local dev */}
       </head>
       <body className={`${inter.className} no-scroll-x`}>
         <AuthProvider>
@@ -52,7 +50,6 @@ export default function RootLayout({
             <Toaster />
           </DiagnosticProvider>
         </AuthProvider>
-        {/* Non-critical script: defer to avoid blocking initial render. TODO: remove in production if unnecessary */}
         <script src="/scripts/iframe-navigation.js" defer></script>
       </body>
     </html>
