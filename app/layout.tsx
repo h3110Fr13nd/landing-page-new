@@ -2,8 +2,6 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth-context';
-// ThemeProvider removed to disable dark-mode toggling
-import { DiagnosticProvider } from '@/components/diagnostic-provider';
 import { Toaster } from '@/components/ui/toaster';
 import Cursor from '@/components/Cursor';
 
@@ -42,14 +40,12 @@ export default function RootLayout({
     <html lang="en">
       <head>
       </head>
-      <body className={`${inter.className} no-scroll-x`}>
-        <AuthProvider>
-          <DiagnosticProvider>
+        <body className={`${inter.className} no-scroll-x`}>
+          <AuthProvider>
             <Cursor />
             {children}
             <Toaster />
-          </DiagnosticProvider>
-        </AuthProvider>
+          </AuthProvider>
         <script src="/scripts/iframe-navigation.js" defer></script>
       </body>
     </html>

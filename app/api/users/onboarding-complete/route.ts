@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!dbUser) {
-      // Can't resolve DB user; return a safe success so client proceeds, but log for diagnostics
       console.warn('Onboarding: could not resolve or create DB user for', user.id)
       return NextResponse.json({ message: 'Onboarding marked as complete' })
     }
