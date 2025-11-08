@@ -1,99 +1,67 @@
-# Invoice Easy - Professional Invoice Management
+# Invoice Easy — Quick Start & Project Map
 
-A modern, full-stack invoice management application built specifically for solo operators, contractors, tradesmen, and small business owners. Built with Next.js 14, TypeScript, Tailwind CSS, Prisma, and Supabase.
+A short, plain-language guide to this repository: what it is, how to run it, and where to find the main pages, APIs and helpers.
 
-## 🚀 Features
+## What this project is
+- A simple invoice app built with Next.js (App Router), TypeScript, Tailwind CSS, Prisma (Postgres) and Supabase for authentication.
 
-### ✅ Completed Features
+## Quick start (local)
+1. Install dependencies:
 
-#### Authentication & User Management
-- **User Registration** - Sign up with email, username, password, country, and currency
-- **Secure Login** - JWT-based authentication with Supabase
-- **Password Reset** - Email-based password recovery
-- **Multi-device Support** - Sessions persist across browsers and devices
-- **User Profiles** - Complete user profile management
+   ```powershell
+   npm install
+   ```
 
-#### Customer Management
-- **Add/Edit/Delete Customers** - Full CRUD operations for customer management
-- **Dynamic Country Fields** - Business registration fields adapt based on selected country:
+2. Create `.env` from `.env.example` and set values for:
+    - `DATABASE_URL`
+    - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+    - `SUPABASE_SERVICE_ROLE_KEY` (server-side, optional)
+    - `BLOB_READ_WRITE_TOKEN` (if you use Vercel Blob for uploads)
+    - SMTP settings (if you use email features)
 
-  ## 🏗 Project structure (clean, hierarchical)
+## Project structure (short)
 
-  Below is a concise, developer-friendly tree of the repository. Each entry includes representative files and a short description.
+## Project structure (short & current)
 
-  ./
-  ├─ .env.example              # Example env file (copy to .env and fill in)
-  ├─ package.json              # npm scripts and dependencies
-  ├─ tsconfig.json             # TypeScript configuration
-  ├─ next.config.js            # Next.js configuration
-  ├─ tailwind.config.ts        # Tailwind CSS config
-  ├─ postcss.config.js         # PostCSS config
-  ├─ README.md                 # This file
-  ├─ WEBSOCKET.md              # Local WebSocket test & configuration notes
-  ├─ docker-compose.yml        # Optional local services
-  ├─ scripts/                  # Utility scripts for maintenance
-  │  └─ fix-supabase-routes.sh
-  ├─ backups/                  # (Optional) DB dumps
-  ├─ docs/                     # Project documentation and guides
-  ├─ public/                   # Public assets (served statically)
-  │  ├─ favicon.svg
-  │  └─ scripts/               # Small client scripts
-  ├─ prisma/                   # Prisma schema + migrations
-  │  ├─ schema.prisma
-  │  └─ migrations/
-  ├─ tests/                    # Small test helpers (DB/env checks)
-  │  ├─ test-db-connection.js
-  │  └─ test-current-env.js
-  └─ app/                      # Next.js App Router (UI + API routes)
-    ├─ globals.css            # Global styles
-    ├─ layout.tsx             # Root layout (providers, fonts)
-    ├─ page.tsx               # Public landing page
-    ├─ env-check/             # /env-check page to validate .env values
-    ├─ login/                 # Auth pages (login UI)
-    ├─ signup/                # Signup pages
-    ├─ reset-password/        # Password reset pages
-    ├─ dashboard/             # Protected app (authenticated UI)
-    │  ├─ layout.tsx
-    │  ├─ page.tsx
-    │  └─ invoices/           # Invoices UI and pages
-    └─ api/                   # API routes (server handlers)
-      ├─ auth/
-      ├─ users/
-      ├─ customers/
-      ├─ invoices/
-      ├─ email/
-      └─ websocket/
+- `app/` — Next.js App Router
+   - UI pages: `app/page.tsx`, `app/dashboard/*`, `app/login`, `app/signup`, `app/reset-password`, `app/pdf-test`, `app/env-check`
+   - API routes: `app/api/*` (many endpoints; examples below)
 
-  components/                  # Reusable React components
-  ├─ ai-chatbot.tsx            # AI assistant UI
-  ├─ optimized-image.tsx       # Lazy / responsive image wrapper
-  ├─ protected-route.tsx       # Client-side route protection
-  └─ ui/                       # Design system primitives (shadcn/ui)
-    ├─ button.tsx
-    ├─ card.tsx
-    ├─ sheet.tsx
-    └─ icons.tsx
+- `app/api/` (examples)
+   - `app/api/users/` — user profile, logo upload
+   - `app/api/invoices/` — invoice creation, PDF endpoints
+   - `app/api/auth/`, `app/api/pdf-warmup/`, `app/api/reports/`, `app/api/email/`, `app/api/chatbot/` — other server handlers
 
-  lib/                         # Shared utilities, clients, and services
-  ├─ supabase.ts               # Server-side Supabase helpers
-  ├─ supabaseClient.ts         # Client-side Supabase instance
-  ├─ prisma.ts                 # Prisma client wrapper
-  ├─ websocket-client.ts       # WebSocket client wrapper for realtime updates
-  ├─ websocket-diagnostics.ts  # Diagnostics adapter for WS client
-  ├─ pdf-generator.ts          # Invoice PDF generation helpers
-  └─ utils.ts                  # Misc helpers
+- `components/` — UI components and grouped folders
+   - `components/ui/` — design primitives (buttons, cards, icons)
+   - `components/dashboard/`, `components/invoices/`, `components/landing/`, `components/settings/` — feature groups
 
-  hooks/
-  └─ use-toast.ts              # Toast helper hook
+- `lib/` — business logic & helpers
+   - `lib/prisma.ts` — Prisma client wrapper
+   - `lib/supabase*.ts` — Supabase client/helpers
+   - `lib/pdf-generator-fast.ts` — server-only PDF generator (keep in API routes)
+   - Other helpers: `lib/api-cache.ts`, `lib/fast-user-cache.ts`, `lib/utils.ts`, `lib/cache-manager.ts`
 
-  types/
-  └─ payments.d.ts             # Global type definitions (example)
+- `hooks/` — React hooks (e.g., `use-toast.ts`, `use-fetch-once.ts`)
+- `prisma/` — `schema.prisma` and migrations
+- `public/` — static assets (images, favicon)
+- `docs/` — documentation (migration notes, guides); I added `docs/quick-start.md`
+- `scripts/` — small maintenance scripts
+- `backups/` — DB dumps (optional)
+- `types/` / `components.json` / `utils/supabase/` — misc helpers and type definitions
 
-  Notes:
-  - Use `./.env.example` as the starting point for `.env` (if present). If no `.env.example` exists, check `app/env-check` to see required env vars.
-  - API routes live under `app/api/*` (each folder contains Next.js route handlers).
-  - `lib/` contains the business logic and integrations (Supabase, Prisma, WebSocket client).
-  - `components/ui/` holds the design primitives used across the app (buttons, dialogs, cards).
+## Where to look (quick)
+
+- Landing: `app/page.tsx`
+- Dashboard: `app/dashboard/` (protected UI)
+- Branding / logo UI: `app/dashboard/settings/branding`
+- API handlers: `app/api/*` (search for the route folder)
+- DB usage: `lib/prisma.ts` and `prisma/schema.prisma`
+- Server auth: `lib/supabase.ts` and `lib/fast-user-cache.ts`
+
+Note: keep server-only code (Puppeteer, blob token calls) inside `app/api/*` so it doesn't run at build-time or end up in client bundles.
+
+Notes:
 
 │   └── protected-route.tsx      # Route protection wrapper
 ├── lib/                         # Utilities and configurations
@@ -129,74 +97,47 @@ Invoice Easy is a full-stack invoice management application aimed at solo operat
 
 This README focuses on a clear, developer-friendly project structure to help you quickly find code and contribute.
 
-## Project structure (clean hierarchical map)
+## Project structure (current, short)
 
-Below is a navigable tree of the most relevant files and folders. Paths are relative to the repository root.
+This project has been reorganized. Use the small tree below to find the main folders and where things live now.
 
 ./
-├─ .env.example                # Example environment variables (copy to .env)
-├─ package.json                # NPM scripts and dependency manifest
-├─ package-lock.json           # Generated lockfile
+├─ .env.example                # Example env (copy to .env and fill)
+├─ package.json                # NPM scripts & dependencies
 ├─ tsconfig.json               # TypeScript config
-├─ next.config.js              # Next.js configuration
-├─ tailwind.config.ts          # Tailwind CSS config
-├─ postcss.config.js           # PostCSS pipeline config
+├─ next.config.js              # Next.js config
+├─ tailwind.config.ts          # Tailwind config
 ├─ README.md                   # Project README (this file)
-├─ WEBSOCKET.md                # WebSocket testing and notes
-├─ docker-compose.yml          # Optional local stack (Postgres, etc.)
-├─ scripts/                    # Maintenance and helper scripts
-│  └─ fix-supabase-routes.sh
-├─ backups/                    # (Optional) DB dumps
-├─ docs/                       # Detailed documentation and guides
-├─ public/                     # Public/static assets (served at /)
-│  ├─ favicon.svg
-│  └─ scripts/                 # Small client scripts used by the UI
-├─ prisma/                     # Prisma schema and migration history
-│  ├─ schema.prisma
-│  └─ migrations/
-├─ tests/                      # Quick test scripts and dev utilities
-│  ├─ test-db-connection.js
-│  └─ test-current-env.js
-├─ components/                 # Reusable React components
-│  ├─ ai-chatbot.tsx
-│  ├─ optimized-image.tsx
-│  ├─ protected-route.tsx
-│  └─ ui/                      # Design primitives (shadcn/ui wrappers)
-│     ├─ button.tsx
-│     ├─ card.tsx
-│     ├─ sheet.tsx
-│     └─ icons.tsx
-├─ lib/                        # Application logic, clients, and helpers
-│  ├─ supabase.ts
-│  ├─ supabaseClient.ts
+├─ docs/                       # Documentation (guides, quick-start)
+├─ public/                     # Static assets (images, favicon)
+├─ prisma/                     # Prisma schema & migrations
+│  └─ schema.prisma
+├─ app/                        # Next.js App Router (pages + API routes)
+│  ├─ page.tsx                 # Landing page
+│  ├─ globals.css
+│  ├─ layout.tsx
+│  ├─ login/
+│  ├─ signup/
+│  ├─ reset-password/
+│  ├─ dashboard/               # Protected UI (invoices, settings)
+│  └─ api/                     # Server endpoints (see examples below)
+├─ components/                 # React components & UI groups
+│  ├─ ui/
+│  ├─ dashboard/
+│  └─ invoices/
+├─ lib/                        # Business logic, clients, helpers
 │  ├─ prisma.ts
-│  ├─ websocket-client.ts
-│  ├─ websocket-diagnostics.ts
-│  ├─ pdf-generator.ts
-│  └─ utils.ts
-├─ hooks/                      # Custom React hooks
-│  └─ use-toast.ts
-├─ types/                      # Global TypeScript declarations
-│  └─ payments.d.ts
-└─ app/                        # Next.js App Router (UI + API routes)
-   ├─ globals.css
-   ├─ layout.tsx               # Root layout (providers, fonts)
-   ├─ page.tsx                 # Public landing page
-   ├─ env-check/               # Route that validates environment variables
-   ├─ login/                   # Login UI
-   ├─ signup/                  # Signup UI
-   ├─ reset-password/          # Password reset UI
-   ├─ dashboard/               # Protected dashboard area (authenticated)
-   │  ├─ layout.tsx
-   │  ├─ page.tsx
-   │  └─ invoices/             # Invoices UI & pages
-   └─ api/                     # Server API route folders (Next.js handlers)
-      ├─ auth/
-      ├─ users/
-      ├─ customers/
-      ├─ invoices/
-      ├─ email/
-      └─ websocket/
+│  ├─ supabase.ts
+│  ├─ pdf-generator-fast.ts     # Server-only PDF generator
+│  └─ api-cache.ts
+├─ hooks/                       # React hooks
+├─ scripts/                     # Maintenance scripts
+└─ backups/                     # Optional DB dumps
+
+Examples under `app/api/`:
+- `app/api/users/` — user profile & logo upload
+- `app/api/invoices/` — invoice creation & PDF endpoints
+- `app/api/auth/`, `app/api/pdf-warmup/`, `app/api/reports/`, `app/api/email/`
 
 ## Folder descriptions (short)
 

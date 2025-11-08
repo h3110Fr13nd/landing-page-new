@@ -93,6 +93,8 @@ export async function GET/POST(request: NextRequest) {
 - Check `/env-check` page to validate environment variables
 - Supabase auth requires both URL and anon key configured
 
+ - Validate environment variables locally by comparing your `.env` with `.env.example` and following the project's environment setup notes
+
 ### Performance Debugging
 - Use browser Network tab to check cache headers (304 responses are good)
 - Monitor `X-Query-Time` headers on API responses
