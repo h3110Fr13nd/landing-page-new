@@ -9,7 +9,7 @@ import { detectUserCountry, getSettingsForCountry } from '@/lib/country-utils'
 import { Eye, EyeOff, Building, Zap, Shield, BarChart, CheckCircle, Users, DollarSign } from 'lucide-react'
 import { SocialLoginButtons } from '@/components/social-login-buttons'
 import DynamicBackground from '@/components/landing/DynamicBackground'
-import { useWorkflowDiagnostics, useFormDiagnostics } from '@/components/diagnostic-provider'
+
 
 const WORK_TYPE_OPTIONS = [
   { value: 'trades-construction', label: 'Trades & Construction – Builders, electricians, plumbers, painters, etc.' },
@@ -47,10 +47,6 @@ export default function SignUpPage() {
 
   const { signUp } = useAuth()
   const router = useRouter()
-  
-  // Diagnostic hooks
-  const workflowDiagnostics = useWorkflowDiagnostics('user-signup')
-  const formDiagnostics = useFormDiagnostics('signup-form')
 
   // Auto-detect country on component mount
   useEffect(() => {
@@ -99,9 +95,6 @@ export default function SignUpPage() {
     e.preventDefault()
     setError('')
 
-    // Run workflow diagnostics before submission
-    await workflowDiagnostics.triggerDiagnostics()
-
     // Validate form fields with diagnostics
     const requiredFields = [
       { name: 'email', value: formData.email, rules: [{ required: true }, { pattern: /\S+@\S+\.\S+/, message: 'Invalid email format' }] },
@@ -112,22 +105,14 @@ export default function SignUpPage() {
     ]
 
     let hasValidationErrors = false
-    for (const field of requiredFields) {
-      const errors = formDiagnostics.validateField(field.name, field.value, field.rules)
-      if (errors.length > 0) {
-        hasValidationErrors = true
-      }
-    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
-      formDiagnostics.validateField('confirmPassword', formData.confirmPassword, [])
       return
     }
 
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long')
-      formDiagnostics.validateField('password', formData.password, [])
       return
     }
 
@@ -165,16 +150,13 @@ export default function SignUpPage() {
         }
         
         setError(errorMessage)
-        formDiagnostics.reportFormSubmission(false, { error: error.message })
         setLoading(false)
       } else {
-        formDiagnostics.reportFormSubmission(true, { username: formData.username })
         router.push('/dashboard')
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       setError(errorMessage)
-      formDiagnostics.reportFormSubmission(false, { error: errorMessage })
       setLoading(false)
     }
   }

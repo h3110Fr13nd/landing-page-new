@@ -17,7 +17,6 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import { logError } from '@/lib/diagnostic-logger'
 
 interface ChatMessage {
   id: string
@@ -260,7 +259,7 @@ export function AiChatbot({ onActionComplete }: ChatbotProps) {
       if (result && result.action) {
         // Validate expected shape before executing
         if (!result.action.type) {
-          logError('chatbot', 'Received action without type from /api/chatbot/process', true, { result })
+          console.error('chatbot', 'Received action without type from /api/chatbot/process', true, { result })
         } else {
           const actionResult = await executeAction(result.action)
           if (actionResult.success) {
@@ -290,13 +289,13 @@ export function AiChatbot({ onActionComplete }: ChatbotProps) {
     // Validate inputs early
     if (!action || !action.type) {
       const msg = 'Invalid action payload'
-      logError('chatbot', `executeAction called with invalid payload: ${JSON.stringify(action)}`, false, { action })
+      console.error('chatbot', `executeAction called with invalid payload: ${JSON.stringify(action)}`, false, { action })
       return { success: false, message: msg }
     }
 
     if (!userProfile?.id) {
       const msg = 'You must be signed in to perform this action.'
-      logError('chatbot', `executeAction blocked: no user signed in`, false, { action })
+      console.error('chatbot', `executeAction blocked: no user signed in`, false, { action })
       return { success: false, message: msg }
     }
 
@@ -323,7 +322,7 @@ export function AiChatbot({ onActionComplete }: ChatbotProps) {
 
       if (!response.ok) {
         const serverMsg = body?.error || body?.message || `Action failed with status ${response.status}`
-        logError('chatbot', `Action '${action.type}' failed: ${serverMsg}`, true, { status: response.status, body })
+        console.error('chatbot', `Action '${action.type}' failed: ${serverMsg}`, true, { status: response.status, body })
         return { success: false, message: serverMsg }
       }
 
@@ -341,8 +340,7 @@ export function AiChatbot({ onActionComplete }: ChatbotProps) {
       return { success: true, message: 'Action completed' }
     } catch (error: any) {
       const errMsg = error?.message || String(error)
-      // Log detailed diagnostic info
-      logError('chatbot', `Error executing action: ${errMsg}`, true, { action, error })
+      console.error('chatbot', `Error executing action: ${errMsg}`, true, { action, error })
       console.error('Error executing action:', error)
       return {
         success: false,

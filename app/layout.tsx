@@ -2,8 +2,6 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth-context';
-// ThemeProvider removed to disable dark-mode toggling
-import { DiagnosticProvider } from '@/components/diagnostic-provider';
 import { Toaster } from '@/components/ui/toaster';
 import Cursor from '@/components/Cursor';
 
@@ -41,18 +39,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Font is provided via next/font/google (Inter). next/font injects preload links automatically; */}
-        {/* removed manual /fonts/inter-var.woff2 preload to avoid 404 during local dev */}
       </head>
-      <body className={`${inter.className} no-scroll-x`}>
-        <AuthProvider>
-          <DiagnosticProvider>
+        <body className={`${inter.className} no-scroll-x`}>
+          <AuthProvider>
             <Cursor />
             {children}
             <Toaster />
-          </DiagnosticProvider>
-        </AuthProvider>
-        {/* Non-critical script: defer to avoid blocking initial render. TODO: remove in production if unnecessary */}
+          </AuthProvider>
         <script src="/scripts/iframe-navigation.js" defer></script>
       </body>
     </html>

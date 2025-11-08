@@ -66,14 +66,6 @@ export const LazyVoiceInvoice = dynamic(
   }
 );
 
-// Diagnostic dashboard - Dev only
-export const LazyDiagnosticDashboard = dynamic(
-  () => import('@/components/diagnostic-dashboard').then(mod => mod.DiagnosticDashboard),
-  {
-    loading: () => <LoadingFallback />,
-    ssr: false,
-  }
-);
 
 // Email tracking status
 export const LazyEmailTrackingStatus = dynamic(

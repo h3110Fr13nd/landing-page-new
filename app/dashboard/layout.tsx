@@ -46,7 +46,7 @@ export default function DashboardLayout({
     router.push('/login')
   }
 
-  const baseNavigation = [
+  const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
     { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
@@ -55,11 +55,6 @@ export default function DashboardLayout({
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ]
 
-  const isDev = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DIAGNOSTICS === 'true'
-  
-  const navigation = isDev 
-    ? [...baseNavigation, { name: 'Diagnostics', href: '/dashboard/diagnostics', icon: Activity }]
-    : baseNavigation
 
   const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
     <>
