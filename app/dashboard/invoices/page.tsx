@@ -272,11 +272,7 @@ export default function InvoicesPage() {
                           <Eye className="h-4 w-4 text-vibrant-blue" />
                         </Button>
                       </Link>
-                      <Link href={`/dashboard/invoices/${invoice.id}/edit`}>
-                        <Button size="sm" variant="outline" title="Edit Invoice" className="border-phthalo-green/30 hover:bg-phthalo-green/10 hover:border-phthalo-green/50">
-                          <Edit className="h-4 w-4 text-phthalo-green" />
-                        </Button>
-                      </Link>
+                      {/* Edit button removed per request */}
                       <Button 
                         size="sm" 
                         variant="outline"
