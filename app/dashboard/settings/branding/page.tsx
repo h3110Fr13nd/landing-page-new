@@ -150,27 +150,37 @@ export default function BrandingSettingsPage() {
   const handleRemoveLogo = async (type: 'custom' | 'ai') => {
     setLoading(true)
     try {
-      const updateData = type === 'custom' 
-        ? { logoUrl: '' }
-        : { aiLogoUrl: '' }
-
-      if (user) {
-        updateUserProfile({ 
-          ...user, 
-          ...(type === 'custom' ? { logoUrl: '' } : { aiLogoUrl: '' })
+      if (type === 'custom') {
+        // Delete custom logo through API (also deletes from Vercel Blob)
+        const response = await fetch('/api/users/logo', {
+          method: 'DELETE',
+          credentials: 'include'
         })
+
+        if (!response.ok) {
+          throw new Error('Failed to delete logo')
+        }
+
+        setLogoData(prev => ({ ...prev, logoUrl: '' }))
+        
+        if (user) {
+          updateUserProfile({ ...user, logoUrl: '' })
+        }
+      } else {
+        // For AI logo, just clear from state and update profile
+        setLogoData(prev => ({ ...prev, aiLogoUrl: '' }))
+        
+        if (user) {
+          updateUserProfile({ ...user, aiLogoUrl: '' })
+        }
       }
-      
-      setLogoData(prev => ({
-        ...prev,
-        [type === 'custom' ? 'logoUrl' : 'aiLogoUrl']: ''
-      }))
 
       toast({
         title: "Logo Removed",
         description: `Your ${type} logo has been removed successfully.`
       })
     } catch (error) {
+      console.error('Logo removal error:', error)
       toast({
         title: "Error",
         description: "Failed to remove logo. Please try again.",

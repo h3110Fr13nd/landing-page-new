@@ -1,28 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import jwt from 'jsonwebtoken'
-import { PrismaClient } from '@prisma/client'
+import { createClient } from '@/utils/supabase/server'
+import { put, del } from '@vercel/blob'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-import { prisma } from '@/lib/prisma'
-
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const authCookie = cookieStore.get('auth_token')?.value
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
 
-    if (!authCookie) {
+    if (error || !user) {
       return NextResponse.json(
         { error: 'Authentication required' }, 
         { status: 401 }
       )
     }
 
-    const decoded = jwt.verify(authCookie, process.env.JWT_SECRET || 'fallback-secret') as { id: string }
-
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+    const userData = await prisma.user.findUnique({
+      where: { id: user.id },
       select: {
         aiLogoUrl: true,
         aiLogoPrompt: true,
@@ -31,14 +27,14 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    if (!user) {
+    if (!userData) {
       return NextResponse.json(
         { error: 'User not found' }, 
         { status: 404 }
       )
     }
 
-    return NextResponse.json(user)
+    return NextResponse.json(userData)
 
   } catch (error) {
     console.error('Logo fetch error:', error)
@@ -51,17 +47,19 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get auth token from cookie or authorization header
-    const cookieStore = await cookies()
-    const authCookie = cookieStore.get('auth_token')?.value
-    const authHeader = request.headers.get('Authorization')
-    const token = authHeader?.replace('Bearer ', '') || authCookie
+    // Get user from Supabase auth
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
 
-    if (!token) {
+    if (error || !user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as { id: string }
+    // Get current user to check for existing logo
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { logoUrl: true }
+    })
 
     // Parse the form data
     const formData = await request.formData()
@@ -73,34 +71,53 @@ export async function POST(request: NextRequest) {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid file type. Please upload an image.' }, { status: 400 })
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large' }, { status: 400 })
+      return NextResponse.json({ error: 'File too large. Maximum size is 5MB.' }, { status: 400 })
     }
 
-    // Convert file to base64 data URL for simplicity
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const base64 = buffer.toString('base64')
-    const dataUrl = `data:${file.type};base64,${base64}`
+    // Delete old logo from Vercel Blob if it exists and is a blob URL
+    if (currentUser?.logoUrl && currentUser.logoUrl.includes('vercel-storage.com')) {
+      try {
+        await del(currentUser.logoUrl)
+        console.log('Deleted old logo:', currentUser.logoUrl)
+      } catch (deleteError) {
+        console.error('Failed to delete old logo:', deleteError)
+        // Continue with upload even if delete fails
+      }
+    }
+
+    // Generate a unique filename with user ID and timestamp
+    const fileExtension = file.name.split('.').pop() || 'png'
+    const filename = `logos/${user.id}-${Date.now()}.${fileExtension}`
+
+    // Upload to Vercel Blob with public access
+    const blob = await put(filename, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    })
+
+    console.log('Uploaded logo to Vercel Blob:', blob.url)
 
     // Update user profile with new logo URL
-    const updatedUser = await prisma.user.update({
-      where: { id: decoded.id },
-      data: { logoUrl: dataUrl }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { logoUrl: blob.url }
     })
 
     return NextResponse.json({ 
-      logoUrl: dataUrl,
+      logoUrl: blob.url,
       message: 'Logo uploaded successfully'
     })
 
   } catch (error) {
     console.error('Logo upload error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to upload logo. Please try again.' 
+    }, { status: 500 })
   }
 }
 
@@ -116,20 +133,18 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const cookieStore = await cookies()
-    const authCookie = cookieStore.get('auth_token')?.value
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
 
-    if (!authCookie) {
+    if (error || !user) {
       return NextResponse.json(
         { error: 'Authentication required' }, 
         { status: 401 }
       )
     }
 
-    const decoded = jwt.verify(authCookie, process.env.JWT_SECRET || 'fallback-secret') as { id: string }
-
     const updatedUser = await prisma.user.update({
-      where: { id: decoded.id },
+      where: { id: user.id },
       data: { logoUrl },
     })
 
@@ -149,20 +164,33 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const authCookie = cookieStore.get('auth_token')?.value
-    const authHeader = request.headers.get('Authorization')
-    const token = authHeader?.replace('Bearer ', '') || authCookie
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
 
-    if (!token) {
+    if (error || !user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as { id: string }
+    // Get current user to delete logo from Vercel Blob
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { logoUrl: true }
+    })
+
+    // Delete logo from Vercel Blob if it exists and is a blob URL
+    if (currentUser?.logoUrl && currentUser.logoUrl.includes('vercel-storage.com')) {
+      try {
+        await del(currentUser.logoUrl)
+        console.log('Deleted logo from Vercel Blob:', currentUser.logoUrl)
+      } catch (deleteError) {
+        console.error('Failed to delete logo from Vercel Blob:', deleteError)
+        // Continue with database update even if blob delete fails
+      }
+    }
 
     // Update user profile to remove logo URL
-    const updatedUser = await prisma.user.update({
-      where: { id: decoded.id },
+    await prisma.user.update({
+      where: { id: user.id },
       data: { logoUrl: null }
     })
 
@@ -170,6 +198,6 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('Logo delete error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete logo' }, { status: 500 })
   }
 }
