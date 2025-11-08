@@ -31,7 +31,7 @@ const workTypes = [
 ]
 
 export default function ProfileSettingsPage() {
-  const { userProfile: user, updateUserProfile } = useAuth()
+  const { userProfile: user, updateUserProfile, getAuthHeaders } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   
@@ -81,12 +81,11 @@ export default function ProfileSettingsPage() {
   const handleProfileSave = async () => {
     setLoading(true)
     try {
+      const headers = await getAuthHeaders()
+      headers['Content-Type'] = 'application/json'
       const response = await fetch(`/api/users/${user?.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: JSON.stringify(profileData)
       })
 

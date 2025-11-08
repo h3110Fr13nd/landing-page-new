@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast'
 import SettingsCard from '@/components/settings/SettingsCard'
 
 export default function NotificationsSettingsPage() {
-  const { userProfile: user } = useAuth()
+  const { userProfile: user, getAuthHeaders } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
 
@@ -28,12 +28,8 @@ export default function NotificationsSettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch('/api/users/settings', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      
+      const headers = await getAuthHeaders()
+      const response = await fetch('/api/users/settings', { headers })
       if (response.ok) {
         const settings = await response.json()
         if (settings.notifications) setNotificationSettings(settings.notifications)
@@ -46,12 +42,11 @@ export default function NotificationsSettingsPage() {
   const handleNotificationSave = async () => {
     setLoading(true)
     try {
+      const headers = await getAuthHeaders()
+      headers['Content-Type'] = 'application/json'
       const response = await fetch('/api/users/settings/notifications', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: JSON.stringify(notificationSettings)
       })
 

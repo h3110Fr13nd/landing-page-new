@@ -22,7 +22,7 @@ const countries = [
 const currencies = ['USD', 'AUD', 'NZD', 'GBP', 'CAD', 'EUR']
 
 export default function TaxCurrencySettingsPage() {
-  const { userProfile: user, updateUserProfile } = useAuth()
+  const { userProfile: user, updateUserProfile, getAuthHeaders } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
 
@@ -48,12 +48,11 @@ export default function TaxCurrencySettingsPage() {
   const handleTaxCurrencySave = async () => {
     setLoading(true)
     try {
+      const headers = await getAuthHeaders()
+      headers['Content-Type'] = 'application/json'
       const response = await fetch(`/api/users/${user?.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: JSON.stringify({
           country: taxCurrencyData.country,
           currency: taxCurrencyData.currency,

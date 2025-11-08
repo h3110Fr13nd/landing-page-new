@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import SettingsCard from '@/components/settings/SettingsCard'
 
 export default function InvoiceAppearanceSettingsPage() {
-  const { userProfile: user, updateUserProfile } = useAuth()
+  const { userProfile: user, updateUserProfile, getAuthHeaders } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
 
@@ -36,18 +36,17 @@ export default function InvoiceAppearanceSettingsPage() {
   const handleInvoiceAppearanceSave = async () => {
     setLoading(true)
     try {
+      const headers = await getAuthHeaders()
+      headers['Content-Type'] = 'application/json'
       const response = await fetch(`/api/users/${user?.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({
           invoiceTemplate: invoiceAppearanceData.invoiceTemplate,
           invoiceColorScheme: invoiceAppearanceData.invoiceColorScheme,
           alwaysCcSelf: invoiceAppearanceData.alwaysCcSelf,
           defaultPaymentInstructions: invoiceAppearanceData.defaultPaymentInstructions || null
-        }),
-        credentials: 'include'
+        })
       })
 
       if (response.ok) {

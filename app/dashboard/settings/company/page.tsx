@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import SettingsCard from '@/components/settings/SettingsCard'
 
 export default function CompanySettingsPage() {
-  const { userProfile: user } = useAuth()
+  const { userProfile: user, getAuthHeaders } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   
@@ -32,37 +32,31 @@ export default function CompanySettingsPage() {
   })
 
   useEffect(() => {
+    // Prefer user profile for company data; fallback to settings endpoint if needed
     if (user) {
-      loadSettings()
+      setCompanyData(prev => ({
+        ...prev,
+        companyName: user.businessName || user.displayName || prev.companyName,
+        companyEmail: user.email || prev.companyEmail,
+        companyPhone: user.phone || prev.companyPhone,
+        companyAddress: user.address || prev.companyAddress,
+        companyCity: user.city || prev.companyCity,
+        companyState: user.state || prev.companyState,
+        companyPostalCode: user.postalCode || user.zipCode || prev.companyPostalCode,
+        companyWebsite: user.website || prev.companyWebsite,
+        logoUrl: user.logoUrl || prev.logoUrl,
+      }))
     }
   }, [user])
-
-  const loadSettings = async () => {
-    try {
-      const response = await fetch('/api/users/settings', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      
-      if (response.ok) {
-        const settings = await response.json()
-        if (settings.company) setCompanyData(settings.company)
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error)
-    }
-  }
 
   const handleCompanySave = async () => {
     setLoading(true)
     try {
+      const headers = await getAuthHeaders()
+      headers['Content-Type'] = 'application/json'
       const response = await fetch('/api/users/settings/company', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: JSON.stringify(companyData)
       })
 
