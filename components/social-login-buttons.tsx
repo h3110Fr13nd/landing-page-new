@@ -30,7 +30,7 @@ export function SocialLoginButtons({
     try {
       const { url, error } = await signInWithOAuth({
         provider,
-        redirectTo: 'dashboard',
+        redirectTo: '/dashboard',
       })
 
       if (error) {
@@ -127,7 +127,7 @@ export function SocialLoginCompact({
     try {
       const { url, error } = await signInWithOAuth({
         provider,
-        redirectTo: 'dashboard',
+        redirectTo: window.location.pathname,
       })
 
       if (error) {
