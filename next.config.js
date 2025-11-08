@@ -52,7 +52,10 @@ const nextConfig = {
   },
   
   // Output optimization
-  output: 'standalone'
+  output: 'standalone',
+  
+  // External packages for serverless functions (Puppeteer on Vercel)
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core']
 };
 
 module.exports = nextConfig;

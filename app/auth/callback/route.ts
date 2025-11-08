@@ -51,40 +51,20 @@ async function ensureUserRecord(user: NonNullable<{ id: string; email?: string |
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  // if "next" is in param, use it as the redirect URL
-  let next = searchParams.get('next') ?? '/dashboard'
-  if (!next.startsWith('/')) {
-    // if "next" is not a relative URL, use the default
-    next = '/dashboard'
-  }
 
   if (code) {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     
-    if (!error) {
+    if (!error && data?.user) {
       // After successful OAuth, ensure user exists in Prisma database
-      try {
-        const user = data?.user
-        if (user) {
-          ensureUserRecord(user).catch((dbError) => {
-            console.error('Error creating user in database during OAuth callback (non-fatal):', dbError)
-          })
-        }
-      } catch (dbError) {
-        console.error('Error reading user during OAuth callback (non-fatal):', dbError)
-      }
+      ensureUserRecord(data.user).catch((dbError) => {
+        console.error('Error creating user in database during OAuth callback (non-fatal):', dbError)
+      })
 
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-      if (isLocalEnv) {
-        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`)
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
-      } else {
-        return NextResponse.redirect(`${origin}${next}`)
-      }
+      // Supabase automatically redirects to the redirectTo URL set in signInWithOAuth
+      // If no redirect is needed, go to dashboard
+      return NextResponse.redirect(`${origin}/dashboard`)
     }
   }
 
