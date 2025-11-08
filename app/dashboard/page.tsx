@@ -282,6 +282,7 @@ export default function DashboardPage() {
                   const isOverdue = isPast(new Date(invoice.dueDate)) && invoice.status !== 'PAID'
                   
                   return (
+                    <Link href={`/dashboard/invoices/${invoice.id}`} key={invoice.id} className="block">
                     <div key={invoice.id} className="flex items-center justify-between p-3 sm:p-4 rounded-lg border border-gray-200/50 hover:bg-gradient-to-r hover:from-sky-blue/10 hover:to-transparent hover:border-vibrant-blue/30 transition-all duration-300 cursor-pointer group">
                       <div className="flex items-center space-x-3 min-w-0">
                         <div className={`p-2 rounded-full flex-shrink-0 ${isOverdue ? 'bg-red-100 group-hover:bg-red-200' : 'bg-gradient-to-br from-vibrant-blue/10 to-phthalo-green/10 group-hover:from-vibrant-blue/20 group-hover:to-phthalo-green/20'} transition-colors`}>
@@ -302,7 +303,7 @@ export default function DashboardPage() {
                           {invoice.status}
                         </Badge>
                       </div>
-                    </div>
+                    </div></Link>
                   )
                 })
               )}
