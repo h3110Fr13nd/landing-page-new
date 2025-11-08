@@ -234,3 +234,5 @@ export function getBaseUrl(): string {
   
   // Production fallback
   return 'https://landing-page-new-delta.vercel.app/';
+  
+}
