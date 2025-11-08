@@ -1,4 +1,4 @@
-import puppeteer, { Browser, Page } from 'puppeteer'
+import { Browser, Page } from 'puppeteer'
 import { Invoice, InvoiceStatus } from './types'
 import { formatCurrency } from './utils'
 import fs from 'fs'
@@ -96,33 +96,55 @@ class FastPDFGenerator {
     }
     const launchStart = Date.now()
     
-    this.browserPromise = puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-extensions',
-        '--disable-plugins',
-        '--disable-images',
-        '--disable-javascript',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess',
-        '--run-all-compositor-stages-before-draw',
-        '--disable-background-timer-throttling',
-        '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-ipc-flooding-protection',
-        '--disable-default-apps',
-        '--disable-sync',
-        '--no-default-browser-check',
-        '--no-first-run',
-        '--disable-gpu',
-        '--memory-pressure-off',
-        '--max_old_space_size=4096'
-      ],
-      timeout: 60000
-    })
+    // Conditionally load correct packages based on environment
+    const isVercel = !!process.env.VERCEL_ENV
+    
+    this.browserPromise = (async () => {
+      let puppeteer: any
+      let launchOptions: any = {
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-images',
+          '--disable-javascript',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess',
+          '--run-all-compositor-stages-before-draw',
+          '--disable-background-timer-throttling',
+          '--disable-renderer-backgrounding',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-ipc-flooding-protection',
+          '--disable-default-apps',
+          '--disable-sync',
+          '--no-default-browser-check',
+          '--no-first-run',
+          '--disable-gpu',
+          '--memory-pressure-off',
+          '--max_old_space_size=4096'
+        ],
+        timeout: 60000
+      }
+      
+      if (isVercel) {
+        // Use puppeteer-core and @sparticuz/chromium for Vercel
+        const chromium = (await import('@sparticuz/chromium')).default
+        puppeteer = await import('puppeteer-core')
+        launchOptions = {
+          ...launchOptions,
+          args: chromium.args,
+          executablePath: await chromium.executablePath()
+        }
+      } else {
+        // Use regular puppeteer for local development
+        puppeteer = await import('puppeteer')
+      }
+      
+      return puppeteer.launch(launchOptions)
+    })()
 
     try {
       this.browser = await this.browserPromise
