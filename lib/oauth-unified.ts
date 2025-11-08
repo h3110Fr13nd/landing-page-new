@@ -15,14 +15,26 @@ interface OAuthConfig {
 
 /**
  * Universal OAuth sign-in
+ * Supabase automatically handles callback to /auth/callback
  */
 export async function signInWithOAuth({ provider, scopes, redirectTo }: OAuthConfig) {
   const supabase = createClient()
   
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-  // Build callback URL with 'next' parameter for final destination
-  const finalDestination = redirectTo || '/dashboard'
-  const callbackUrl = `${baseUrl}/auth/callback?next=${encodeURIComponent(finalDestination)}`
+  // Get the base URL for redirect
+  const getURL = () => {
+    let url = 
+      process.env.NEXT_PUBLIC_SITE_URL ??
+      process.env.NEXT_PUBLIC_VERCEL_URL ??
+      'http://localhost:3000'
+    
+    // Ensure URL includes protocol
+    url = url.startsWith('http') ? url : `https://${url}`
+    // Ensure URL ends with /
+    url = url.endsWith('/') ? url : `${url}/`
+    return url
+  }
+
+  const finalRedirect = redirectTo ? `${getURL()}${redirectTo.replace(/^\//, '')}` : `${getURL()}dashboard`
 
   // Map provider names to Supabase provider names
   const providerMap: Record<OAuthProvider, any> = {
@@ -35,7 +47,7 @@ export async function signInWithOAuth({ provider, scopes, redirectTo }: OAuthCon
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: providerMap[provider],
     options: {
-      redirectTo: callbackUrl,
+      redirectTo: finalRedirect,
       scopes: scopes?.join(' '),
       queryParams: {
         access_type: 'offline',
