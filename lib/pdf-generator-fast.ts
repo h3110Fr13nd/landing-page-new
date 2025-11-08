@@ -109,7 +109,7 @@ class FastPDFGenerator {
           '--disable-dev-shm-usage',
           '--disable-extensions',
           '--disable-plugins',
-          '--disable-images',
+          // NOTE: removed '--disable-images' so images (logos) can load in PDFs
           '--disable-javascript',
           '--disable-web-security',
           '--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess',
@@ -187,15 +187,16 @@ class FastPDFGenerator {
   // Optimize page for fastest PDF generation
   private async optimizePage(page: Page): Promise<void> {
     // Disable unnecessary features for speed
-    await page.setRequestInterception(true)
-    page.on('request', (request) => {
-      const resourceType = request.resourceType()
-      if (['image', 'stylesheet', 'font', 'script'].includes(resourceType)) {
-        request.abort()
-      } else {
-        request.continue()
-      }
-    })
+      await page.setRequestInterception(true)
+      page.on('request', (request) => {
+        const resourceType = request.resourceType()
+        // Allow images to load (so embedded logos show up in PDFs). Still block other heavy asset types.
+        if (['stylesheet', 'font', 'script'].includes(resourceType)) {
+          request.abort()
+        } else {
+          request.continue()
+        }
+      })
 
     // Set viewport for consistent rendering
     await page.setViewport({ width: 794, height: 1123 }) // A4 size in pixels
@@ -282,6 +283,7 @@ class FastPDFGenerator {
       invoiceColorScheme?: string // <-- add color scheme from user/business
     }
   ): Promise<Buffer> {
+    console.log("business:", business)
     const startTime = Date.now()
     const perfLog = {
       cacheCheck: 0,
@@ -325,18 +327,52 @@ class FastPDFGenerator {
       page = await this.getPage()
       perfLog.pageGet = Date.now() - pageStart
 
+      // If the business logo is a remote URL, fetch and inline it as a base64 data URI.
+      // This guarantees rendering inside the headless browser (no auth/CORS issues).
+      if (business?.logo && /^https?:\/\//i.test(business.logo)) {
+        try {
+          const resp = await fetch(business.logo)
+          if (resp.ok) {
+            const buffer = await resp.arrayBuffer()
+            const base64 = Buffer.from(buffer).toString('base64')
+            const contentType = resp.headers.get('content-type') || 'image/png'
+            business = { ...business, logo: `data:${contentType};base64,${base64}` }
+          } else {
+            console.warn(`⚠️ FastPDF: failed to fetch logo (${resp.status}) - leaving original URL`) 
+          }
+        } catch (err) {
+          console.warn('⚠️ FastPDF: error fetching logo to inline:', err)
+        }
+      }
+
       // Generate HTML content
       const htmlStart = Date.now()
-  const htmlContent = this.generateOptimizedHTML(invoice, business)
+      const htmlContent = this.generateOptimizedHTML(invoice, business)
       perfLog.htmlGen = Date.now() - htmlStart
 
       // Set content with minimal wait time
       const contentStart = Date.now()
-      await page.setContent(htmlContent, { 
-        waitUntil: 'domcontentloaded', // Faster than networkidle0
-        timeout: 5000 
-      })
-      perfLog.contentSet = Date.now() - contentStart
+        await page.setContent(htmlContent, {
+          waitUntil: 'domcontentloaded', // Faster than networkidle0
+          timeout: 10000
+        })
+
+        // Wait for images to finish loading (logos) before rendering PDF.
+        // This is a short, non-blocking wait so generation stays fast but images are included.
+        try {
+          await page.evaluate(async () => {
+            const imgs = Array.from(document.images || [])
+            await Promise.all(imgs.map((img) => {
+              if ((img as HTMLImageElement).complete) return Promise.resolve()
+              return new Promise((resolve) => { (img as HTMLImageElement).onload = (img as HTMLImageElement).onerror = resolve })
+            }))
+          })
+        } catch (e) {
+          // If image waiting fails, continue — we prefer to generate the PDF rather than fail.
+          console.warn('⚠️ FastPDF: image load wait failed', e)
+        }
+
+        perfLog.contentSet = Date.now() - contentStart
 
       // Generate PDF with optimized settings
       const pdfStart = Date.now()
