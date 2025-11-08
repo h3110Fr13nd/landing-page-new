@@ -17,6 +17,7 @@ export default function BrandingSettingsPage() {
   const [loading, setLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [uploadLoading, setUploadLoading] = useState(false)
+  const [logoLoadError, setLogoLoadError] = useState<{ custom: boolean; ai: boolean }>({ custom: false, ai: false })
   
   // Branding state
   const [logoData, setLogoData] = useState({
@@ -231,10 +232,11 @@ export default function BrandingSettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-4">
-                  <img 
-                    src={logoData.aiLogoUrl} 
-                    alt="AI Generated Logo" 
+                  <img
+                    src={logoData.aiLogoUrl}
+                    alt="AI Generated Logo"
                     className="h-16 w-16 rounded border object-contain bg-gray-50"
+                    onError={() => setLogoLoadError(prev => ({ ...prev, ai: true }))}
                   />
                   <div className="flex-1">
                     <p className="text-sm text-gray-600">AI-generated logo for {logoData.businessName}</p>
@@ -303,10 +305,11 @@ export default function BrandingSettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-4">
-                  <img 
-                    src={logoData.logoUrl} 
-                    alt="Custom Logo" 
+                  <img
+                    src={logoData.logoUrl}
+                    alt="Custom Logo"
                     className="h-16 w-16 rounded border object-contain bg-gray-50"
+                    onError={() => setLogoLoadError(prev => ({ ...prev, custom: true }))}
                   />
                   <div className="flex-1">
                     <p className="text-sm text-gray-600">Your uploaded logo</p>

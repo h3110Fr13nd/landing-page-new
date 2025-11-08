@@ -79,10 +79,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large. Maximum size is 5MB.' }, { status: 400 })
     }
 
+    // Prepare Vercel Blob token (support alternate env var name used in some setups)
+    const vercelBlobToken = process.env.BLOB_READ_WRITE_TOKEN || process.env.INVOICE_BLOB_READ_WRITE_TOKEN
+
     // Delete old logo from Vercel Blob if it exists and is a blob URL
     if (currentUser?.logoUrl && currentUser.logoUrl.includes('vercel-storage.com')) {
       try {
-        await del(currentUser.logoUrl)
+        // pass token explicitly to avoid package lookup issues in various runtimes
+        await del(currentUser.logoUrl, { token: vercelBlobToken })
         console.log('Deleted old logo:', currentUser.logoUrl)
       } catch (deleteError) {
         console.error('Failed to delete old logo:', deleteError)
@@ -98,6 +102,7 @@ export async function POST(request: NextRequest) {
     const blob = await put(filename, file, {
       access: 'public',
       addRandomSuffix: false,
+      token: vercelBlobToken,
     })
 
     console.log('Uploaded logo to Vercel Blob:', blob.url)
@@ -177,10 +182,13 @@ export async function DELETE(request: NextRequest) {
       select: { logoUrl: true }
     })
 
+    // Prepare Vercel Blob token (support alternate env var name used in some setups)
+    const vercelBlobToken = process.env.BLOB_READ_WRITE_TOKEN || process.env.INVOICE_BLOB_READ_WRITE_TOKEN
+
     // Delete logo from Vercel Blob if it exists and is a blob URL
     if (currentUser?.logoUrl && currentUser.logoUrl.includes('vercel-storage.com')) {
       try {
-        await del(currentUser.logoUrl)
+        await del(currentUser.logoUrl, { token: vercelBlobToken })
         console.log('Deleted logo from Vercel Blob:', currentUser.logoUrl)
       } catch (deleteError) {
         console.error('Failed to delete logo from Vercel Blob:', deleteError)
