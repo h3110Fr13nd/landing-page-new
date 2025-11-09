@@ -257,7 +257,19 @@ ${freshUserProfile.email}`
             })) || []
           }
 
-          const pdfBuffer = await generateInvoicePDF(invoiceForPDF as any, freshUserProfile as any)
+          // Build business info to pass to PDF generator (match `/api/invoices/[id]/pdf` logic)
+          const businessInfo = {
+            name: freshUserProfile.businessName || freshUserProfile.displayName || freshUserProfile.username || undefined,
+            address: [freshUserProfile.address, freshUserProfile.city, freshUserProfile.state, freshUserProfile.zipCode, freshUserProfile.country].filter(Boolean).join(', ') || undefined,
+            phone: freshUserProfile.phone || undefined,
+            email: freshUserProfile.email || undefined,
+            // Prefer custom logo, fallback to AI-generated logo
+            logo: freshUserProfile.logoUrl || freshUserProfile.aiLogoUrl || undefined,
+            taxId: freshUserProfile.businessRegNumber || undefined,
+            invoiceColorScheme: freshUserProfile.invoiceColorScheme || 'blue'
+          }
+
+          const pdfBuffer = await generateInvoicePDF(invoiceForPDF as any, businessInfo)
 
           // Perform the actual send
           await transporter.sendMail({
