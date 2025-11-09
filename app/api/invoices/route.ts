@@ -139,6 +139,17 @@ export const POST = createPOST(
     )
 
     // Serialize decimals
+    // Kick off background PDF generation (fire-and-forget)
+    try {
+      const { triggerInvoicePdfGeneration } = await import('@/lib/pdf-background')
+      // don't await - fire and forget
+      ;(async () => {
+        try { await triggerInvoicePdfGeneration(invoice.id, dbUser!.id) } catch (e) { console.warn('Background PDF trigger failed', e) }
+      })()
+    } catch (err) {
+      console.warn('Failed to schedule PDF generation', err)
+    }
+
     return serializeInvoice(invoice)
   },
   { cache: false, createUserIfMissing: true }

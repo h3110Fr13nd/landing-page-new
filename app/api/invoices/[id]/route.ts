@@ -84,6 +84,16 @@ export async function PATCH(
         { operationName: 'Update invoice' }
       )
 
+      // Fire-and-forget: regenerate PDF for updated invoice (debounced)
+      try {
+        const { triggerInvoicePdfGeneration } = await import('@/lib/pdf-background')
+        ;(async () => {
+          try { await triggerInvoicePdfGeneration(updatedInvoice.id, dbUser!.id) } catch (e) { console.warn('Background PDF trigger failed', e) }
+        })()
+      } catch (err) {
+        console.warn('Failed to schedule PDF generation after update', err)
+      }
+
       return {
         ...serializeInvoice(updatedInvoice),
         payments: updatedInvoice.payments?.map(serializePayment)

@@ -269,7 +269,43 @@ ${freshUserProfile.email}`
             invoiceColorScheme: freshUserProfile.invoiceColorScheme || 'blue'
           }
 
-          const pdfBuffer = await generateInvoicePDF(invoiceForPDF as any, businessInfo)
+          // Try to use stored PDF in blob storage first. If the PDF is being generated
+          // concurrently, poll the DB briefly to wait for the blob URL to appear before
+          // falling back to on-demand generation. This reduces redundant generation when
+          // the background PDF job is already running.
+          let pdfBuffer: Buffer | null = null
+          try {
+            const { fetchBlobAsBuffer } = await import('@/lib/vercel-blob')
+            let blobUrl: string | null = freshInvoice.pdfUrl ?? null
+
+            // If no blobUrl yet, wait briefly (up to 3s) polling the DB for an updated pdfUrl
+            if (!blobUrl) {
+              const waitStart = Date.now()
+              const WAIT_MS = 3000
+              const INTERVAL_MS = 500
+              while (!blobUrl && (Date.now() - waitStart) < WAIT_MS) {
+                await new Promise((res) => setTimeout(res, INTERVAL_MS))
+                try {
+                  const row = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { pdfUrl: true } })
+                  blobUrl = row?.pdfUrl ?? null
+                } catch (e) {
+                  // ignore transient db errors during polling
+                }
+              }
+            }
+
+            if (blobUrl) {
+              pdfBuffer = await fetchBlobAsBuffer(blobUrl)
+            }
+          } catch (fetchErr) {
+            console.warn('Failed to fetch invoice PDF from blob, will generate fallback', fetchErr)
+            pdfBuffer = null
+          }
+
+          // Fallback to on-demand generation if blob not available after waiting
+          if (!pdfBuffer) {
+            pdfBuffer = await generateInvoicePDF(invoiceForPDF as any, businessInfo)
+          }
 
           // Perform the actual send
           await transporter.sendMail({

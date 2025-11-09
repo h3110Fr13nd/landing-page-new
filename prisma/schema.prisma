@@ -125,6 +125,7 @@ model Invoice {
   emailBouncedAt    DateTime?
   deliveryStatus    String?       // 'sent', 'delivered', 'bounced', 'failed'
   trackingId        String?       // Unique ID for email tracking
+  pdfUrl            String?       // Public URL to generated PDF in Vercel Blob
   deletedAt         DateTime?     // Soft delete timestamp
   deletedBy         String?       // User ID who deleted it
   deleteReason      String?       // Optional reason for deletion

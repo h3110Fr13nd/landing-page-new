@@ -329,11 +329,31 @@ export default function InvoiceDetailPage() {
       })
       
       const headers = await getAuthHeaders()
-      const response = await fetch(`/api/invoices/${invoice.id}/pdf`, { 
-        headers,
-        method: 'GET'
-      })
-      
+      // If we already have the stored PDF URL on the client invoice, open it immediately
+      if ((invoice as any).pdfUrl) {
+        window.open((invoice as any).pdfUrl, '_blank')
+        toast({ title: 'Success', description: 'Invoice PDF opened in a new tab' })
+        return
+      }
+
+      // Refresh invoice record (no-cache) to pick up pdfUrl created in background
+      try {
+        const refreshResp = await fetch(`/api/invoices/${invoice.id}`, { headers, cache: 'no-cache' })
+        if (refreshResp.ok) {
+          const refreshed = await refreshResp.json()
+          setInvoice(refreshed)
+          if (refreshed.pdfUrl) {
+            window.open(refreshed.pdfUrl, '_blank')
+            toast({ title: 'Success', description: 'Invoice PDF opened in a new tab' })
+            return
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to refresh invoice before download:', e)
+      }
+
+      const response = await fetch(`/api/invoices/${invoice.id}/pdf`, { headers, method: 'GET' })
+
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -345,11 +365,8 @@ export default function InvoiceDetailPage() {
         a.click()
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
-        
-        toast({
-          title: "Success",
-          description: "Invoice PDF downloaded successfully",
-        })
+
+        toast({ title: 'Success', description: 'Invoice PDF downloaded successfully' })
       } else {
         throw new Error('Failed to generate PDF')
       }

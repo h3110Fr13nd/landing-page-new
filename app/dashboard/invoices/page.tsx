@@ -273,12 +273,31 @@ export default function InvoicesPage() {
                         </Button>
                       </Link>
                       {/* Edit button removed per request */}
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         title="Download PDF"
-                        onClick={() => {
-                          window.open(`/api/invoices/${invoice.id}/pdf`, '_blank')
+                        onClick={async () => {
+                          try {
+                              // If a stored PDF URL is already present on the invoice object, open it directly
+                              if ((invoice as any).pdfUrl) {
+                                window.open((invoice as any).pdfUrl, '_blank')
+                                return
+                              }
+
+                              const headers = await getAuthHeaders()
+                              const resp = await fetch(`/api/invoices/${invoice.id}`, { headers, cache: 'no-cache' })
+                              if (resp.ok) {
+                                const fresh = await resp.json()
+                                if (fresh.pdfUrl) {
+                                  window.open(fresh.pdfUrl, '_blank')
+                                  return
+                                }
+                              }
+                            } catch (e) {
+                              console.warn('Failed to refresh invoice before download', e)
+                            }
+                            window.open(`/api/invoices/${invoice.id}/pdf`, '_blank')
                         }}
                         className="border-sky-blue/50 hover:bg-sky-blue/20 hover:border-sky-blue"
                       >

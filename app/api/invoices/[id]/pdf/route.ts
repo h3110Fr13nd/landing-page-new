@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/utils/supabase/server'
-import { generateInvoicePDF } from '@/lib/pdf-generator-fast'
+import { fetchBlobAsBuffer } from '@/lib/vercel-blob'
+import { triggerInvoicePdfGeneration } from '@/lib/pdf-background'
 
 export async function GET(
   request: NextRequest,
@@ -68,31 +69,30 @@ export async function GET(
       })) || []
     }
 
-    // Generate PDF using production Puppeteer-based generator
-    const businessInfo = {
-      name: userProfile.businessName || userProfile.displayName || undefined,
-      address: [userProfile.address, userProfile.city, userProfile.state, userProfile.zipCode, userProfile.country].filter(Boolean).join(', ') || undefined,
-      phone: userProfile.phone || undefined,
-      email: userProfile.email || undefined,
-      logo: userProfile.logoUrl || userProfile.aiLogoUrl || undefined,
-      taxId: userProfile.businessRegNumber || undefined,
-      invoiceColorScheme: userProfile.invoiceColorScheme || 'blue'
+    // If a PDF is already stored in blob, return it. Otherwise enqueue generation and return 202.
+    if (invoice.pdfUrl) {
+      try {
+        const buf = await fetchBlobAsBuffer(invoice.pdfUrl)
+        return new NextResponse(buf as BodyInit, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="Invoice-${invoice.number}.pdf"`,
+            'Content-Length': buf.length.toString(),
+          },
+        })
+      } catch (err) {
+        console.error('Failed to fetch stored PDF, will attempt background regen', err)
+        // fallthrough to trigger regeneration
+      }
     }
-    
-    const pdfBuffer = await generateInvoicePDF(invoiceForPDF as any, businessInfo)
 
-    // Log the PDF generation for tracking
-    console.log(`Invoice PDF generated for ${invoice.number} by user ${user.id}`)
+    // No PDF yet (or failed to fetch). Trigger background generation and inform client.
+    ;(async () => {
+      try { await triggerInvoicePdfGeneration(id, user.id) } catch (e) { console.warn('Background PDF trigger failed', e) }
+    })()
 
-    // Return PDF as response
-    return new NextResponse(pdfBuffer as BodyInit, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Invoice-${invoice.number}.pdf"`,
-        'Content-Length': pdfBuffer.length.toString(),
-      },
-    })
+    return NextResponse.json({ message: 'PDF generation queued. Try again shortly.' }, { status: 202 })
 
   } catch (error) {
     console.error('Error generating invoice PDF:', error)

@@ -270,11 +270,31 @@ export default function InvoicesPage() {
                         <Edit className="h-4 w-4" />
                       </Button>
                     </Link>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="ghost"
                       title="Download PDF"
-                      onClick={() => {
+                      onClick={async () => {
+                        try {
+                          // If we already have a stored PDF URL, open it immediately
+                          if ((invoice as any).pdfUrl) {
+                            window.open((invoice as any).pdfUrl, '_blank')
+                            return
+                          }
+
+                          const headers = await getAuthHeaders()
+                          // Refresh invoice to pick up pdfUrl if generated in background
+                          const resp = await fetch(`/api/invoices/${invoice.id}`, { headers, cache: 'no-cache' })
+                          if (resp.ok) {
+                            const fresh = await resp.json()
+                            if (fresh.pdfUrl) {
+                              window.open(fresh.pdfUrl, '_blank')
+                              return
+                            }
+                          }
+                        } catch (e) {
+                          console.warn('Failed to refresh invoice before download', e)
+                        }
                         window.open(`/api/invoices/${invoice.id}/pdf`, '_blank')
                       }}
                     >
